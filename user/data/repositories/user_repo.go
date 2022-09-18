@@ -22,7 +22,7 @@ func NewUserRepository(db *gorm.DB) repositories.UserRepository {
 
 func (repo userRepo) Create(ctx context.Context, user entities.User) (*entities.User, error) {
 	userModel := mappers.NewUserMapper().ToModel(user)
-	err := repo.db.Create(userModel).Error
+	err := repo.db.Create(&userModel).Error
 	if err != nil {
 		return nil, err
 	}

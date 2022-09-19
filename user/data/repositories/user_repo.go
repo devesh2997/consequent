@@ -46,9 +46,12 @@ func (repo userRepo) Update(ctx context.Context, user entities.User) error {
 
 func (repo userRepo) FindByID(ctx context.Context, id int64) (*entities.User, error) {
 	userModel := models.User{}
-	err := repo.db.Find(&userModel, id).Error
-	if err != nil {
-		return nil, err
+	res := repo.db.Find(&userModel, id)
+	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {
+		return nil, res.Error
+	}
+	if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+		return nil, repositories.ErrUserNotFound
 	}
 
 	userEntity := mappers.NewUserMapper().ToEntity(userModel)
@@ -56,11 +59,14 @@ func (repo userRepo) FindByID(ctx context.Context, id int64) (*entities.User, er
 	return &userEntity, nil
 }
 
-func (repo userRepo) FindByMobile(ctx context.Context, mobile string) (*entities.User, error) {
+func (repo userRepo) FindByMobile(ctx context.Context, mobile int64) (*entities.User, error) {
 	userModel := models.User{}
-	err := repo.db.Where("mobile = ?", mobile).Find(&userModel).Error
-	if err != nil {
-		return nil, err
+	res := repo.db.Where("mobile = ?", mobile).Find(&userModel)
+	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {
+		return nil, res.Error
+	}
+	if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+		return nil, repositories.ErrUserNotFound
 	}
 
 	userEntity := mappers.NewUserMapper().ToEntity(userModel)
@@ -70,9 +76,12 @@ func (repo userRepo) FindByMobile(ctx context.Context, mobile string) (*entities
 
 func (repo userRepo) FindByEmail(ctx context.Context, email string) (*entities.User, error) {
 	userModel := models.User{}
-	err := repo.db.Where("email = ?", email).Find(&userModel).Error
-	if err != nil {
-		return nil, err
+	res := repo.db.Where("email = ?", email).Find(&userModel)
+	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {
+		return nil, res.Error
+	}
+	if res.Error == gorm.ErrRecordNotFound || res.RowsAffected == 0 {
+		return nil, repositories.ErrUserNotFound
 	}
 
 	userEntity := mappers.NewUserMapper().ToEntity(userModel)

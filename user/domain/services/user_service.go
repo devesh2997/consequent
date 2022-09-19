@@ -11,7 +11,7 @@ type UserService interface {
 	Create(ctx context.Context, user entities.User) (*entities.User, error)
 	Update(ctx context.Context, user entities.User) error
 	FindByID(ctx context.Context, id int64) (*entities.User, error)
-	FindByMobile(ctx context.Context, mobile string) (*entities.User, error)
+	FindByMobile(ctx context.Context, mobile int64) (*entities.User, error)
 	FindByEmail(ctx context.Context, email string) (*entities.User, error)
 }
 
@@ -35,7 +35,7 @@ func (service userService) FindByID(ctx context.Context, id int64) (*entities.Us
 	return service.repo.FindByID(ctx, id)
 }
 
-func (service userService) FindByMobile(ctx context.Context, mobile string) (*entities.User, error) {
+func (service userService) FindByMobile(ctx context.Context, mobile int64) (*entities.User, error) {
 	return service.repo.FindByMobile(ctx, mobile)
 }
 

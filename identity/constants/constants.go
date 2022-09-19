@@ -1,5 +1,8 @@
 package constants
 
 const (
-	USER_PASSWORD_STATUS_ACTIVE = "active"
+	USER_PASSWORD_STATUS_ACTIVE           = "active"
+	USER_LOGIN_MOBILE_OTP_STATUS_ACTIVE   = "active"
+	USER_LOGIN_MOBILE_OTP_STATUS_VERIFIED = "verified"
+	USER_LOGIN_MOBILE_OTP_STATUS_EXPIRED  = "expired"
 )

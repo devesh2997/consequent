@@ -2,6 +2,7 @@ package repositories
 
 import (
 	"context"
+	"time"
 
 	"github.com/devesh2997/consequent/identity/constants"
 	"github.com/devesh2997/consequent/identity/data/mappers"
@@ -39,4 +40,26 @@ func (repo identityRepo) StoreUserPassword(ctx context.Context, userPassword ent
 	}
 
 	return err
+}
+
+func (repo identityRepo) StoreUserLoginMobileOTP(ctx context.Context, otp entities.UserLoginMobileOTP) error {
+	model := mappers.NewUserLoginMobileOTP().ToModel(otp)
+	model.UpdatedAt = time.Now()
+	if err := repo.db.Create(&model).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (repo identityRepo) GetUserLoginMobileOTP(ctx context.Context, verificationID string) (*entities.UserLoginMobileOTP, error) {
+	otp := models.UserLoginMobileOTP{}
+	err := repo.db.Where("verification_id = ?", verificationID).Find(&otp).Error
+	if err != nil {
+		return nil, err
+	}
+
+	entity := mappers.NewUserLoginMobileOTP().ToEntity(otp)
+
+	return &entity, nil
 }

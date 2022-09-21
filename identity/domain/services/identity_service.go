@@ -26,8 +26,8 @@ type IdentityService interface {
 	VerifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) (*entities.Token, error)
 }
 
-func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenGenrator TokenService) IdentityService {
-	return identityService{repo: repo, userService: userService, tokenService: tokenGenrator}
+func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenService TokenService) IdentityService {
+	return identityService{repo: repo, userService: userService, tokenService: tokenService}
 }
 
 type identityService struct {

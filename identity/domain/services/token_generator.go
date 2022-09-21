@@ -22,7 +22,7 @@ type TokenService interface {
 	Generate(ctx context.Context, user userEntities.User) (*entities.Token, error)
 }
 
-func NewTokenGenerator(repo repositories.TokenRepo) TokenService {
+func NewTokenService(repo repositories.TokenRepo) TokenService {
 	return tokenService{repo: repo}
 }
 

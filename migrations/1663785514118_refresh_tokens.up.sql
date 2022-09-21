@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `refresh_tokens` (
     `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `token` varchar(255) NOT NULL,
+    `token` text NOT NULL,
     `status` varchar(50) NOT NULL,
     `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
     `expiry_at` timestamp NOT NULL,

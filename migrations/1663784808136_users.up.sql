@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `users` (
     `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `mobile` int,
+    `mobile` varchar(13),
     `email` varchar(255),
     `name` varchar(50),
     `gender` varchar(15),

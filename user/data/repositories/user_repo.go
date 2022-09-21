@@ -59,7 +59,7 @@ func (repo userRepo) FindByID(ctx context.Context, id int64) (*entities.User, er
 	return &userEntity, nil
 }
 
-func (repo userRepo) FindByMobile(ctx context.Context, mobile int64) (*entities.User, error) {
+func (repo userRepo) FindByMobile(ctx context.Context, mobile string) (*entities.User, error) {
 	userModel := models.User{}
 	res := repo.db.Where("mobile = ?", mobile).Find(&userModel)
 	if res.Error != nil && res.Error != gorm.ErrRecordNotFound {

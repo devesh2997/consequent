@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS `user_login_mobile_otps` (
     `id` int NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    `mobile` int NOT NULL,
+    `mobile` varchar(13) NOT NULL,
     `otp` int NOT NULL,
     `verification_id` varchar(255) NOT NULL,
     `status` varchar(50) NOT NULL,

@@ -4,6 +4,7 @@ import (
 	"github.com/devesh2997/consequent/datasources"
 	"github.com/devesh2997/consequent/identity/data/repositories"
 	"github.com/devesh2997/consequent/identity/domain/services"
+	"github.com/devesh2997/consequent/identity/presentation/controllers"
 	"github.com/devesh2997/consequent/user/containers"
 )
 
@@ -29,4 +30,8 @@ func InjectIdentityService() services.IdentityService {
 	tokenService := InjectTokenService()
 
 	return services.NewIdentityService(repo, userService, tokenService)
+}
+
+func InjectIdentityController() controllers.IdentityController {
+	return controllers.NewIdentityController(InjectIdentityService())
 }

@@ -22,12 +22,12 @@ const (
 )
 
 type IdentityService interface {
-	SendOTP(ctx context.Context, mobileNumber int64) (verificationID string, err error)
-	VerifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) (*entities.Token, error)
+	SendOTP(ctx context.Context, mobileNumber string) (verificationID string, err error)
+	VerifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) (*entities.Token, error)
 }
 
 func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenService TokenService) IdentityService {
-	return identityService{repo: repo, userService: userService, tokenService: tokenService}
+	return identityService{repo: repo, userService: userService, tokenService: tokenService, otpSender: NewOTPSender()}
 }
 
 type identityService struct {
@@ -57,7 +57,10 @@ func (identityService) generateOTP(numDigits int) (int, error) {
 
 var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
 
-func (service identityService) SendOTP(ctx context.Context, mobileNumber int64) (verificationID string, err error) {
+func (service identityService) SendOTP(ctx context.Context, mobileNumber string) (verificationID string, err error) {
+	if err := service.validateMobile(mobileNumber); err != nil {
+		return "", err
+	}
 	otp, err := service.generateOTP(4)
 	if err != nil {
 		return "", errorx.NewSystemError(-1, err)
@@ -83,7 +86,15 @@ func (service identityService) SendOTP(ctx context.Context, mobileNumber int64) 
 	return verificationID, nil
 }
 
-func (service identityService) VerifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) (*entities.Token, error) {
+func (service identityService) validateMobile(mobileNumber string) error {
+	if len(mobileNumber) != 10 { // TODO (devesh2997) | this validation can be improved
+		return errInvalidMobile()
+	}
+
+	return nil
+}
+
+func (service identityService) VerifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) (*entities.Token, error) {
 	if err := service.verifyOTP(ctx, verificationID, mobileNumber, otp); err != nil {
 		return nil, err
 	}
@@ -105,17 +116,17 @@ func (service identityService) VerifyOTP(ctx context.Context, verificationID str
 	return service.tokenService.Generate(ctx, *user)
 }
 
-func (service identityService) verifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) error {
+func (service identityService) verifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) error {
 	userLoginMobileOTP, err := service.repo.GetUserLoginMobileOTP(ctx, verificationID)
 	if err != nil {
 		return errorx.NewSystemError(-1, err)
 	}
 
 	if userLoginMobileOTP.Mobile != mobileNumber {
-		return errorx.NewSystemError(-1, errInvalidMobile())
+		return errInvalidMobile()
 	}
 
-	if userLoginMobileOTP.OTP != otp {
+	if userLoginMobileOTP.OTP != otp || !userLoginMobileOTP.IsActive() {
 		return errInvalidOTP()
 	}
 

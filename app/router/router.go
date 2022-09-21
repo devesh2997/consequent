@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/devesh2997/consequent/app/middleware"
+	"github.com/devesh2997/consequent/identity/router"
 	"github.com/devesh2997/consequent/logger"
 	"github.com/gin-gonic/gin"
 )
@@ -19,6 +20,9 @@ func Create() http.Handler {
 			"message": "Hello from consequent.",
 		})
 	})
+
+	identityGroup := r.Group("/identity")
+	router.InjectIdentityRoutes(identityGroup)
 
 	return r
 }

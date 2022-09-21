@@ -32,7 +32,7 @@ func (repo identityRepo) GetActiveUserPassword(ctx context.Context, userID int64
 	return &userPasswordEntity, nil
 }
 
-func (repo identityRepo) StoreUserPassword(ctx context.Context, userPassword entities.UserPassword) error {
+func (repo identityRepo) SaveUserPassword(ctx context.Context, userPassword entities.UserPassword) error {
 	userPasswordModel := mappers.NewUserPasswordMapper().ToModel(userPassword)
 	err := repo.db.Create(&userPasswordModel).Error
 	if err != nil {
@@ -42,10 +42,10 @@ func (repo identityRepo) StoreUserPassword(ctx context.Context, userPassword ent
 	return err
 }
 
-func (repo identityRepo) StoreUserLoginMobileOTP(ctx context.Context, otp entities.UserLoginMobileOTP) error {
+func (repo identityRepo) SaveUserLoginMobileOTP(ctx context.Context, otp entities.UserLoginMobileOTP) error {
 	model := mappers.NewUserLoginMobileOTP().ToModel(otp)
 	model.UpdatedAt = time.Now()
-	if err := repo.db.Create(&model).Error; err != nil {
+	if err := repo.db.Save(&model).Error; err != nil {
 		return err
 	}
 

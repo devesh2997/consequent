@@ -26,15 +26,15 @@ type IdentityService interface {
 	VerifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) (*entities.Token, error)
 }
 
-func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService) IdentityService {
-	return identityService{repo: repo, userService: userService, tokenGenerator: NewTokenGenerator()}
+func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenGenrator TokenService) IdentityService {
+	return identityService{repo: repo, userService: userService, tokenService: tokenGenrator}
 }
 
 type identityService struct {
-	repo           repositories.IdentityRepo
-	userService    services.UserService
-	otpSender      OTPSender
-	tokenGenerator TokenGenerator
+	repo         repositories.IdentityRepo
+	userService  services.UserService
+	otpSender    OTPSender
+	tokenService TokenService
 }
 
 func (identityService) generateOTP(numDigits int) (int, error) {
@@ -64,7 +64,7 @@ func (service identityService) SendOTP(ctx context.Context, mobileNumber int64) 
 	}
 
 	verificationID = uuid.New().String()
-	err = service.repo.StoreUserLoginMobileOTP(ctx, entities.UserLoginMobileOTP{
+	err = service.repo.SaveUserLoginMobileOTP(ctx, entities.UserLoginMobileOTP{
 		VerificationID: verificationID,
 		Mobile:         mobileNumber,
 		OTP:            otp,
@@ -102,7 +102,7 @@ func (service identityService) VerifyOTP(ctx context.Context, verificationID str
 		}
 	}
 
-	return service.tokenGenerator.Generate(*user)
+	return service.tokenService.Generate(ctx, *user)
 }
 
 func (service identityService) verifyOTP(ctx context.Context, verificationID string, mobileNumber int64, otp int) error {
@@ -120,13 +120,13 @@ func (service identityService) verifyOTP(ctx context.Context, verificationID str
 	}
 
 	nextStatus := constants.USER_LOGIN_MOBILE_OTP_STATUS_VERIFIED
-	if time.Now().After(userLoginMobileOTP.ExpiryAt) {
+	if userLoginMobileOTP.HasExpired() {
 		nextStatus = constants.USER_LOGIN_MOBILE_OTP_STATUS_EXPIRED
 		err = errOTPHasExpired()
 	}
 
 	userLoginMobileOTP.Status = nextStatus
-	if e := service.repo.StoreUserLoginMobileOTP(ctx, *userLoginMobileOTP); e != nil {
+	if e := service.repo.SaveUserLoginMobileOTP(ctx, *userLoginMobileOTP); e != nil {
 		err = errorx.NewSystemError(-1, e)
 	}
 

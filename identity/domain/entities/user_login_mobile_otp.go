@@ -12,3 +12,7 @@ type UserLoginMobileOTP struct {
 	ExpiryAt       time.Time
 	UpdatedAt      time.Time
 }
+
+func (otp UserLoginMobileOTP) HasExpired() bool {
+	return time.Now().After(otp.ExpiryAt)
+}

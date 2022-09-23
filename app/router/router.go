@@ -6,6 +6,7 @@ import (
 	"github.com/devesh2997/consequent/app/middleware"
 	"github.com/devesh2997/consequent/identity/router"
 	"github.com/devesh2997/consequent/logger"
+	userRouter "github.com/devesh2997/consequent/user/router"
 	"github.com/gin-gonic/gin"
 )
 
@@ -23,6 +24,9 @@ func Create() http.Handler {
 
 	identityGroup := r.Group("/identity")
 	router.InjectIdentityRoutes(identityGroup)
+
+	userGroup := r.Group("/user")
+	userRouter.InjectUserRoutes(userGroup)
 
 	return r
 }

@@ -14,10 +14,9 @@ var (
 )
 
 type RequestUser struct {
-	ID        int64
-	FirstName string
-	LastName  string
-	Email     string
+	ID     int64
+	Mobile string
+	Email  string
 }
 
 func (user RequestUser) IsPresent() bool {

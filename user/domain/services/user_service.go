@@ -28,6 +28,14 @@ func (service userService) Create(ctx context.Context, user entities.User) (*ent
 }
 
 func (service userService) Update(ctx context.Context, user entities.User) error {
+	existingUser, err := service.repo.FindByID(ctx, user.ID)
+	if err != nil && err != repositories.ErrUserNotFound {
+		return err
+	}
+	if existingUser == nil {
+		return errUserNotFound()
+	}
+
 	return service.repo.Update(ctx, user)
 }
 

@@ -20,6 +20,7 @@ const (
 
 type TokenService interface {
 	Generate(ctx context.Context, user userEntities.User) (*entities.Token, error)
+	Validate(token string) (interface{}, error)
 }
 
 func NewTokenService(repo repositories.TokenRepo) TokenService {
@@ -75,18 +76,18 @@ func (service tokenService) getJWTClaims(user userEntities.User, exp int64) jwt.
 	claims["sub"] = user.ID                     // Subject of the token (i.e. the user)
 	claims["usr"] = service.getJWTPayload(user) // User data.
 	claims["exp"] = exp                         // The expiration time after which the token must be disregarded.
-	claims["iat"] = time.Now()                  // The time at which the token was issued.
-	claims["nbf"] = time.Now()                  // The time before which the token must be disregarded.
+	// claims["iat"] = time.Now()                  // The time at which the token was issued.
+	// claims["nbf"] = time.Now()                  // The time before which the token must be disregarded.
 
 	return claims
 }
 
 func (service tokenService) getRefreshTokenClaims(userID int64, exp int64) jwt.MapClaims {
 	claims := make(jwt.MapClaims)
-	claims["sub"] = userID     // Subject of the token (i.e. the user)
-	claims["exp"] = exp        // The expiration time after which the token must be disregarded.
-	claims["iat"] = time.Now() // The time at which the token was issued.
-	claims["nbf"] = time.Now() // The time before which the token must be disregarded.
+	claims["sub"] = userID // Subject of the token (i.e. the user)
+	claims["exp"] = exp    // The expiration time after which the token must be disregarded.
+	// claims["iat"] = time.Now() // The time at which the token was issued.
+	// claims["nbf"] = time.Now() // The time before which the token must be disregarded.
 
 	return claims
 }
@@ -116,7 +117,34 @@ func (service tokenService) getJWTPayload(user userEntities.User) map[string]int
 		"id":     user.ID,
 		"email":  user.Email,
 		"mobile": user.Mobile,
-		"name":   user.Name,
-		"gender": user.Gender,
 	}
+}
+
+func (service tokenService) Validate(token string) (interface{}, error) {
+	publicKey, err := service.repo.GetPublicKey()
+	if err != nil {
+		return nil, err
+	}
+	key, err := jwt.ParseRSAPublicKeyFromPEM(publicKey)
+	if err != nil {
+		return "", fmt.Errorf("validate: parse key: %w", err)
+	}
+
+	tok, err := jwt.Parse(token, func(jwtToken *jwt.Token) (interface{}, error) {
+		if _, ok := jwtToken.Method.(*jwt.SigningMethodRSA); !ok {
+			return nil, fmt.Errorf("unexpected method: %s", jwtToken.Header["alg"])
+		}
+
+		return key, nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("validate: %w", err)
+	}
+
+	claims, ok := tok.Claims.(jwt.MapClaims)
+	if !ok || !tok.Valid {
+		return nil, fmt.Errorf("validate: invalid")
+	}
+
+	return claims["dat"], nil
 }

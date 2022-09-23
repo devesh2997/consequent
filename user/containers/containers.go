@@ -4,6 +4,7 @@ import (
 	"github.com/devesh2997/consequent/datasources"
 	"github.com/devesh2997/consequent/user/data/repositories"
 	"github.com/devesh2997/consequent/user/domain/services"
+	"github.com/devesh2997/consequent/user/presentation/controllers"
 )
 
 func InjectUserService() services.UserService {
@@ -15,4 +16,10 @@ func InjectUserService() services.UserService {
 	repo := repositories.NewUserRepository(ds.SQLClients.GetGormDB())
 
 	return services.NewUserService(repo)
+}
+
+func InjectUserController() controllers.UserController {
+	service := InjectUserService()
+
+	return controllers.NewUserController(service)
 }

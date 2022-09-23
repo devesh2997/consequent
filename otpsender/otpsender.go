@@ -3,9 +3,6 @@ package otpsender
 import (
 	"context"
 	"fmt"
-	"net/http"
-
-	"github.com/devesh2997/consequent/errorx"
 )
 
 type OTPSender interface {
@@ -25,12 +22,12 @@ type factor2 struct {
 }
 
 func (f2 factor2) Send(ctx context.Context, mobileNumber string, otp int) error {
-	url := f2.getSendOTPURL(mobileNumber, otp)
-	res, err := http.Get(url) // TODO (devesh2997) | better handling of the response object can be done here
-	if err != nil {
-		return errorx.NewSystemError(-1, err)
-	}
-	fmt.Println(res.StatusCode)
+	// url := f2.getSendOTPURL(mobileNumber, otp)
+	// res, err := http.Get(url) // TODO (devesh2997) | better handling of the response object can be done here
+	// if err != nil {
+	// 	return errorx.NewSystemError(-1, err)
+	// }
+	// fmt.Println(res.StatusCode)
 
 	return nil
 }

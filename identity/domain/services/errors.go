@@ -21,4 +21,10 @@ var (
 	errOTPHasExpired = func() error {
 		return errorx.NewBusinessError(-1, "otp has expired")
 	}
+	errUserNotFoundForEmail = func() error {
+		return errorx.NewBusinessError(-1, "user not found for email")
+	}
+	errInvalidPassword = func() error {
+		return errorx.NewBusinessError(-1, "invalid password")
+	}
 )

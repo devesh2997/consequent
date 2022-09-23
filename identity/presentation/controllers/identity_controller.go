@@ -12,6 +12,9 @@ import (
 type IdentityController interface {
 	SendOTP(gCtx *gin.Context)
 	VerifyOTP(gCtx *gin.Context)
+	IsEmailRegistered(gCtx *gin.Context)
+	SignUpWithEmail(gCtx *gin.Context)
+	SignInWithEmailAndPassword(gCtx *gin.Context)
 }
 
 func NewIdentityController(service services.IdentityService) IdentityController {
@@ -54,6 +57,67 @@ func (c identityController) VerifyOTP(gCtx *gin.Context) {
 	}
 
 	token, err := c.service.VerifyOTP(gCtx.Request.Context(), input.VerificationID, input.MobileNumber, input.OTP)
+	if err != nil {
+		c.SendWithError(gCtx, err)
+		return
+	}
+
+	tokenModel := mappers.NewTokenMapper().ToModel(*token)
+
+	c.Send(gCtx, tokenModel)
+}
+
+func (c identityController) IsEmailRegistered(gCtx *gin.Context) {
+	email, exists := gCtx.GetQuery("email")
+	if !exists {
+		c.SendBadRequestError(gCtx, errors.New("email is required"))
+		return
+	}
+	registered, err := c.service.IsEmailRegistered(gCtx.Request.Context(), email)
+	if err != nil {
+		c.SendWithError(gCtx, err)
+		return
+	}
+
+	c.Send(gCtx, gin.H{
+		"registered": registered,
+	})
+}
+
+func (c identityController) SignUpWithEmail(gCtx *gin.Context) {
+	input := struct {
+		Email    string `json:"email" form:"email"`
+		Password string `json:"password" form:"password"`
+	}{}
+
+	if err := gCtx.ShouldBind(&input); err != nil {
+		c.SendBadRequestError(gCtx, err)
+		return
+	}
+
+	token, err := c.service.SignUpWithEmail(gCtx.Request.Context(), input.Email, input.Password)
+	if err != nil {
+		c.SendWithError(gCtx, err)
+		return
+	}
+
+	tokenModel := mappers.NewTokenMapper().ToModel(*token)
+
+	c.Send(gCtx, tokenModel)
+}
+
+func (c identityController) SignInWithEmailAndPassword(gCtx *gin.Context) {
+	input := struct {
+		Email    string `json:"email" form:"email"`
+		Password string `json:"password" form:"password"`
+	}{}
+
+	if err := gCtx.ShouldBind(&input); err != nil {
+		c.SendBadRequestError(gCtx, err)
+		return
+	}
+
+	token, err := c.service.SignInWithEmailAndPassword(gCtx.Request.Context(), input.Email, input.Password)
 	if err != nil {
 		c.SendWithError(gCtx, err)
 		return

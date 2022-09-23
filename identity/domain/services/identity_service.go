@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"io"
+	"net/mail"
 	"strconv"
 	"time"
 
@@ -26,6 +27,9 @@ const (
 type IdentityService interface {
 	SendOTP(ctx context.Context, mobileNumber string) (verificationID string, err error)
 	VerifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) (*entities.Token, error)
+	IsEmailRegistered(ctx context.Context, email string) (bool, error)
+	SignUpWithEmail(ctx context.Context, email string, password string) (*entities.Token, error)
+	SignInWithEmailAndPassword(ctx context.Context, email string, password string) (*entities.Token, error)
 }
 
 func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenService TokenService, otpSender otpsender.OTPSender) IdentityService {
@@ -57,7 +61,7 @@ func (identityService) generateOTP(numDigits int) (int, error) {
 	return otp, nil
 }
 
-var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9', '0'}
+var table = [...]byte{'1', '2', '3', '4', '5', '6', '7', '8', '9'}
 
 func (service identityService) SendOTP(ctx context.Context, mobileNumber string) (verificationID string, err error) {
 	if err := service.validateMobile(mobileNumber); err != nil {
@@ -151,7 +155,91 @@ func (service identityService) verifyOTP(ctx context.Context, verificationID str
 	return err
 }
 
-func (identityService) SignUpWithEmail(ctx context.Context, email string, password string) error {
+func (service identityService) SignUpWithEmail(ctx context.Context, email string, password string) (*entities.Token, error) {
+	if err := service.validateEmailAndPassword(email, password); err != nil {
+		return nil, err
+	}
+	existingUser, err := service.userService.FindByEmail(ctx, email)
+	if err != nil && err != userRepositories.ErrUserNotFound {
+		return nil, err
+	}
+	if existingUser != nil {
+		errUserAlreadyExistsForEmail()
+	}
+
+	user, err := service.userService.Create(ctx, userEntities.User{Email: email})
+	if err != nil {
+		return nil, err
+	}
+
+	err = service.repo.SaveUserPassword(ctx, entities.UserPassword{
+		UserID:   user.ID,
+		Password: password, // TODO (devesh2997) | hashed value should be stored here, not plaintext
+		Status:   constants.USER_PASSWORD_STATUS_ACTIVE,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return service.tokenService.Generate(ctx, *user)
+}
+
+func (service identityService) IsEmailRegistered(ctx context.Context, email string) (bool, error) {
+	if !service.isEmailValid(email) {
+		return false, errInvalidEmail()
+	}
+
+	existingUser, err := service.userService.FindByEmail(ctx, email)
+	if err != nil && err != userRepositories.ErrUserNotFound {
+		return false, err
+	}
+	if existingUser != nil {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func (service identityService) SignInWithEmailAndPassword(ctx context.Context, email string, password string) (*entities.Token, error) {
+	if err := service.validateEmailAndPassword(email, password); err != nil {
+		return nil, err
+	}
+	existingUser, err := service.userService.FindByEmail(ctx, email)
+	if err != nil && err != userRepositories.ErrUserNotFound {
+		return nil, err
+	}
+	if existingUser == nil {
+		return nil, errUserNotFoundForEmail()
+	}
+
+	userPassword, err := service.repo.GetActiveUserPassword(ctx, existingUser.ID)
+	if err != nil {
+		return nil, err
+	}
+	if userPassword.Password != password {
+		return nil, errWrongPassword()
+	}
+
+	return service.tokenService.Generate(ctx, *existingUser)
+}
+
+func (service identityService) validateEmailAndPassword(email string, password string) error {
+	if !service.isEmailValid(email) {
+		return errInvalidEmail()
+	}
+	if !service.isPasswordValid(password) {
+		return errInvalidPassword()
+	}
 
 	return nil
+}
+
+func (service identityService) isEmailValid(email string) bool {
+	_, err := mail.ParseAddress(email)
+
+	return err == nil
+}
+
+func (service identityService) isPasswordValid(password string) bool {
+	return len(password) > 5 // TODO (devesh2997) | password rules can be much stricter
 }

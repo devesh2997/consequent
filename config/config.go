@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"sync"
 
@@ -10,9 +11,10 @@ import (
 
 // AppConfig represents the application config that are defined in env files.
 type AppConfig struct {
-	Log  LogConfig `mapstructure:"log"`
-	SQL  SQLConfig `mapstructure:"sql"`
-	Port string    `mapstructure:"port"`
+	Log           LogConfig     `mapstructure:"log"`
+	SQL           SQLConfig     `mapstructure:"sql"`
+	Factor2Config Factor2Config `mapstructure:"2factor"`
+	Port          string        `mapstructure:"port"`
 }
 
 func (appConfig AppConfig) Validate() error {
@@ -20,9 +22,12 @@ func (appConfig AppConfig) Validate() error {
 		return err
 	}
 	if appConfig.Port == "" {
-		return errorx.NewValidationError(2, "(appconfig)port not found")
+		return errorx.NewSystemError(-1, errors.New("(appconfig)port not found"))
 	}
 	if err := appConfig.SQL.Validate(); err != nil {
+		return err
+	}
+	if err := appConfig.Factor2Config.Validate(); err != nil {
 		return err
 	}
 
@@ -44,15 +49,15 @@ type LogConfig struct {
 func (logConfig LogConfig) Validate(Type string) error {
 	if logConfig.Code == "" {
 		message := fmt.Sprintf("(%s)code not found", Type)
-		return errorx.NewValidationError(11, message)
+		return errorx.NewSystemError(-1, errors.New(message))
 	}
 	if logConfig.Level == "" {
 		message := fmt.Sprintf("(%s)level not found", Type)
-		return errorx.NewValidationError(12, message)
+		return errorx.NewSystemError(-1, errors.New(message))
 	}
 	if !logConfig.EnableCaller {
 		message := fmt.Sprintf("(%s)enableCaller not found", Type)
-		return errorx.NewValidationError(13, message)
+		return errorx.NewSystemError(-1, errors.New(message))
 	}
 
 	return nil
@@ -68,16 +73,16 @@ type SQLConnConfig struct {
 
 func (sqlConnConfig SQLConnConfig) Validate() error {
 	if sqlConnConfig.User == "" {
-		return errorx.NewValidationError(331, "(sqlconnconfig)user not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconnconfig)user not found"))
 	}
 	if sqlConnConfig.Password == "" {
-		return errorx.NewValidationError(332, "(sqlconnconfig)password not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconnconfig)password not found"))
 	}
 	if sqlConnConfig.Host == "" {
-		return errorx.NewValidationError(333, "(sqlconnconfig)host not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconnconfig)host not found"))
 	}
 	if sqlConnConfig.DB == "" {
-		return errorx.NewValidationError(333, "(sqlconnconfig)db not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconnconfig)db not found"))
 	}
 	return nil
 }
@@ -91,10 +96,10 @@ type SQLConfig struct {
 
 func (sqlConfig SQLConfig) Validate() error {
 	if sqlConfig.DriverName == "" {
-		return errorx.NewValidationError(31, "(sqlconfig)drivername not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconfig)drivername not found"))
 	}
 	if sqlConfig.DataSourceNameFormat == "" {
-		return errorx.NewValidationError(32, "(sqlconfig)datasourcenameformat not found")
+		return errorx.NewSystemError(-1, errors.New("(sqlconfig)datasourcenameformat not found"))
 	}
 	if err := sqlConfig.Master.Validate(); err != nil {
 		return err
@@ -104,6 +109,22 @@ func (sqlConfig SQLConfig) Validate() error {
 		if err := slaveConfig.Validate(); err != nil {
 			return err
 		}
+	}
+
+	return nil
+}
+
+type Factor2Config struct {
+	APIKey          string `mapstructure:"api_key"`
+	OTPTemplateName string `mapstructure:"otp_template_name"`
+}
+
+func (factorConfig Factor2Config) Validate() error {
+	if factorConfig.APIKey == "" {
+		return errorx.NewSystemError(-1, errors.New("2factor.in api key not found"))
+	}
+	if factorConfig.OTPTemplateName == "" {
+		return errorx.NewSystemError(-1, errors.New("2factor.in otp template name not found"))
 	}
 
 	return nil

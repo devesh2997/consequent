@@ -11,6 +11,8 @@ import (
 	"github.com/devesh2997/consequent/identity/constants"
 	"github.com/devesh2997/consequent/identity/domain/entities"
 	"github.com/devesh2997/consequent/identity/domain/repositories"
+	"github.com/devesh2997/consequent/logger"
+	"github.com/devesh2997/consequent/otpsender"
 	userEntities "github.com/devesh2997/consequent/user/domain/entities"
 	userRepositories "github.com/devesh2997/consequent/user/domain/repositories"
 	"github.com/devesh2997/consequent/user/domain/services"
@@ -26,14 +28,14 @@ type IdentityService interface {
 	VerifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) (*entities.Token, error)
 }
 
-func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenService TokenService) IdentityService {
-	return identityService{repo: repo, userService: userService, tokenService: tokenService, otpSender: NewOTPSender()}
+func NewIdentityService(repo repositories.IdentityRepo, userService services.UserService, tokenService TokenService, otpSender otpsender.OTPSender) IdentityService {
+	return identityService{repo: repo, userService: userService, tokenService: tokenService, otpSender: otpSender}
 }
 
 type identityService struct {
 	repo         repositories.IdentityRepo
 	userService  services.UserService
-	otpSender    OTPSender
+	otpSender    otpsender.OTPSender
 	tokenService TokenService
 }
 
@@ -79,11 +81,16 @@ func (service identityService) SendOTP(ctx context.Context, mobileNumber string)
 		return "", errorx.NewSystemError(-1, err)
 	}
 
-	if err := service.otpSender.Send(ctx, mobileNumber, otp); err != nil {
-		return "", err
-	}
+	go service.sendOTP(mobileNumber, otp)
 
 	return verificationID, nil
+}
+
+func (service identityService) sendOTP(mobileNumber string, otp int) {
+	ctx := context.TODO()
+	if err := service.otpSender.Send(ctx, mobileNumber, otp); err != nil {
+		logger.Log.Error(ctx, err)
+	}
 }
 
 func (service identityService) validateMobile(mobileNumber string) error {

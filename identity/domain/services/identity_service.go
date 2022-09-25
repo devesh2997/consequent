@@ -27,6 +27,7 @@ const (
 type IdentityService interface {
 	SendOTP(ctx context.Context, mobileNumber string) (verificationID string, err error)
 	VerifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) (*entities.Token, error)
+	ResendOTP(ctx context.Context, verificationID string) (string, error)
 	IsEmailRegistered(ctx context.Context, email string) (bool, error)
 	SignUpWithEmail(ctx context.Context, email string, password string) (*entities.Token, error)
 	SignInWithEmailAndPassword(ctx context.Context, email string, password string) (*entities.Token, error)
@@ -125,6 +126,20 @@ func (service identityService) VerifyOTP(ctx context.Context, verificationID str
 	}
 
 	return service.tokenService.Generate(ctx, *user)
+}
+
+func (service identityService) ResendOTP(ctx context.Context, verificationID string) (string, error) {
+	userLoginMobileOTP, err := service.repo.GetUserLoginMobileOTP(ctx, verificationID)
+	if err != nil {
+		return "", errorx.NewSystemError(-1, err)
+	}
+	if !userLoginMobileOTP.IsActive() || userLoginMobileOTP.HasExpired() { // TODO (devesh2997) | mark the old otp as expired if neccessary
+		return service.SendOTP(ctx, userLoginMobileOTP.Mobile)
+	}
+
+	go service.sendOTP(userLoginMobileOTP.Mobile, userLoginMobileOTP.OTP)
+
+	return verificationID, nil
 }
 
 func (service identityService) verifyOTP(ctx context.Context, verificationID string, mobileNumber string, otp int) error {

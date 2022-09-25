@@ -31,6 +31,7 @@ func (f2 factor2) Send(ctx context.Context, mobileNumber string, otp int) error 
 		return errorx.NewSystemError(-1, err)
 	}
 	fmt.Println(res.StatusCode)
+	// fmt.Printf("sending otp: %d\n", otp)
 
 	return nil
 }

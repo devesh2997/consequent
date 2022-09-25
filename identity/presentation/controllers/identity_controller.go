@@ -12,6 +12,7 @@ import (
 type IdentityController interface {
 	SendOTP(gCtx *gin.Context)
 	VerifyOTP(gCtx *gin.Context)
+	ResendOTP(gCtx *gin.Context)
 	IsEmailRegistered(gCtx *gin.Context)
 	SignUpWithEmail(gCtx *gin.Context)
 	SignInWithEmailAndPassword(gCtx *gin.Context)
@@ -34,6 +35,24 @@ func (c identityController) SendOTP(gCtx *gin.Context) {
 	}
 
 	verificationID, err := c.service.SendOTP(gCtx.Request.Context(), mobileNumber)
+	if err != nil {
+		c.SendWithError(gCtx, err)
+		return
+	}
+
+	c.Send(gCtx, gin.H{
+		"verification_id": verificationID,
+	})
+}
+
+func (c identityController) ResendOTP(gCtx *gin.Context) {
+	verification_id, exists := gCtx.GetQuery("verification_id")
+	if !exists {
+		c.SendBadRequestError(gCtx, errors.New("verification_id is required"))
+		return
+	}
+
+	verificationID, err := c.service.ResendOTP(gCtx.Request.Context(), verification_id)
 	if err != nil {
 		c.SendWithError(gCtx, err)
 		return

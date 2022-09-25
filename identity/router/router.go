@@ -16,6 +16,9 @@ func setupV1Routes(r *gin.RouterGroup) {
 	v1.POST("/send-otp", func(c *gin.Context) {
 		identiyController.SendOTP(c)
 	})
+	v1.POST("/resend-otp", func(c *gin.Context) {
+		identiyController.ResendOTP(c)
+	})
 	v1.POST("/verify-otp", func(c *gin.Context) {
 		identiyController.VerifyOTP(c)
 	})
